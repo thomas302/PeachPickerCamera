@@ -3,6 +3,8 @@ import sys
 import time
 import numpy as np
 import cv2
+import cProfile
+import pstats
 sys.path.append('/home/peach/src/darknet/src-python')
 import darknet
 import depthai as dai
@@ -369,9 +371,10 @@ if __name__ == "__main__":
 
     TARGET_LOOP_MS = 20
     print("Running — press 'q' to quit.")
-
+    profiler = cProfile.Profile()
     try:
         while True:
+            profiler.enable()
             loop_start = time.monotonic()
 
             # Plug in real yaw/pitch/roll from your IMU/pose source here
@@ -391,17 +394,17 @@ if __name__ == "__main__":
                              f"{loc.pos_camera[1]:+.2f}, "
                              f"{loc.pos_camera[2]:.2f})m")
 
-                cv2.rectangle(rgb, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
-                cv2.putText(
-                    rgb, f"{loc.label} {loc.conf:.0f}% {depth_str}",
-                    (int(x1), max(int(y1) - 20, 0)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2
-                )
-                cv2.putText(
-                    rgb, cam_str,
-                    (int(x1), max(int(y1) - 4, 0)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.42, color, 1
-                )
+                #cv2.rectangle(rgb, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+                #cv2.putText(
+                #    rgb, f"{loc.label} {loc.conf:.0f}% {depth_str}",
+                #    (int(x1), max(int(y1) - 20, 0)),
+                #    cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2
+                #)
+                #cv2.putText(
+                #    rgb, cam_str,
+                #    (int(x1), max(int(y1) - 4, 0)),
+                #    cv2.FONT_HERSHEY_SIMPLEX, 0.42, color, 1
+                #)
 
                 print(
                     f"{loc.label}: {loc.conf:.1f}%  "
@@ -411,11 +414,11 @@ if __name__ == "__main__":
                        if loc.pos_world is not None else "")
                 )
 
-            if not locations:
-                cv2.putText(rgb, "No detections", (20, 40),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            #if not locations:
+                #cv2.putText(rgb, "No detections", (20, 40),
+                 #           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-            cv2.imshow("Darknet - OAK-D", rgb)
+            #cv2.imshow("Darknet - OAK-D", rgb)
 
             elapsed_ms   = (time.monotonic() - loop_start) * 1000
             remaining_ms = TARGET_LOOP_MS - elapsed_ms
@@ -424,9 +427,12 @@ if __name__ == "__main__":
             else:
                 print(f"Loop overrun: {-remaining_ms:.1f}ms")
 
-            if cv2.waitKey(1) == ord('q'):
-                break
+            #if cv2.waitKey(1) == ord('q'):
+             #   break
+            profiler.disable()
 
     finally:
+        stats = pstats.Stats(profiler).sort_stats('cumtime')
+        stats.print_stats()
         darknet.free_network_ptr(network)
         cv2.destroyAllWindows()
